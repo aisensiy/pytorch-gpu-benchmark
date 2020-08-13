@@ -284,17 +284,38 @@ def different_models_on_same_gpu(experiment_result,envs):
                 os.makedirs(save_image_dir)
             plot_models_on_same_gpu(all_model_time,gpu,save_image_dir)
 
-def compare_between_envs(experiment_result,envs):
-    
-    env_gpus = {}
+
+def get_gpus_intersection(experiment_result,envs):
+    envs_gpus = {}
     all_gpus = []
     for env in envs:
         gpus_dir = os.path.join(experiment_result,env)
         gpus = get_gpus(gpus_dir)
         all_gpus.append(gpus)
-        env_gpus[env] = get_gpus(gpus_dir)
-    print("env_gpus: ",env_gpus)
-    print("all_gpus: ",all_gpus)
+        envs_gpus[env] = get_gpus(gpus_dir)
+    # print("env_gpus: ",env_gpus)
+    # print("all_gpus: ",all_gpus)
+    return list(set.intersection(*map(set,all_gpus))),envs_gpus
+
+
+def get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu):
+    envs_benchmark = {}
+
+    for env in envs:
+        model_benchmark_dir = os.path.join(experiment_result,env,gpu,'data')
+        all_model_time = get_per_model_mean_time(model_benchmark_dir)
+        envs_benchmark[env] = all_model_time
+        # print(env_benchmark)
+    print(envs_benchmark)
+    return envs_benchmark
+    
+def compare_between_envs(experiment_result,envs):
+    gpus,envs_gpus = get_gpus_intersection(experiment_result,envs)
+    print("gpus: ",gpus)
+    if len(gpus) == 0:
+        raise Exception("not found save gpu between envs !",env_gpus) 
+    for gpu in gpus:
+        envs_benchmark =get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu)
 
 
 
@@ -313,7 +334,7 @@ def statistic_experiment_result(env_name,device_name):
         compare_between_envs(experiment_result,envs)
         pass
 
-    different_models_on_same_gpu(experiment_result,envs)
+    # different_models_on_same_gpu(experiment_result,envs)
 
 
 
@@ -325,6 +346,6 @@ if __name__ == '__main__':
     env_name=args.ENVIRONMENT
     device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
 
-    experiment(env_name,device_name)
+    # experiment(env_name,device_name)
 
     statistic_experiment_result(env_name,device_name)
