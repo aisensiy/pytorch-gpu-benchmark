@@ -1,0 +1,14 @@
+benchmark start : 2020/08/12 13:27:02
+system_configs
+
+uname_result(system='Linux', node='aisensiy-atmxl9ozgunz-main', release='4.15.0-106-generic', version='#107-Ubuntu SMP Thu Jun 4 11:27:52 UTC 2020', machine='x86_64', processor='x86_64')
+scpufreq(current=1016.1751041666666, min=1000.0, max=2301.0)
+cpu_count: 48
+memory_available: 127524831232
+gpu_configs
+
+Number of GPUs on current device : 1
+CUDA Version : 10.0.130
+Cudnn Version : 7602
+Device Name : GeForce RTX 2080
+benchmark end : 2020/08/12 14:41:39
