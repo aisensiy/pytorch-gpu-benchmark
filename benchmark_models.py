@@ -14,21 +14,10 @@ import matplotlib.pyplot as plt
 torch.backends.cudnn.benchmark = True
 
 RESULT_ROOT_DIR = './experiment_results'
-
-
-# MODEL_LIST = {
-
-#     models.mnasnet:models.mnasnet.__all__[1:],
-#     models.resnet: models.resnet.__all__[1:],
-#     models.densenet: models.densenet.__all__[1:],
-#     models.squeezenet: models.squeezenet.__all__[1:],
-#     models.vgg: models.vgg.__all__[1:],
-#     models.mobilenet:models.mobilenet.__all__[1:],
-#     models.shufflenetv2:models.shufflenetv2.__all__[1:]
-# }
+ENVS_BENCHMARK_IMAGE_SAVE_DIR = './envs_benchmark_result'
+DF_COLUMNS = ['envs','gpus','models','phases','precisions','time']
 
 MODEL_LIST = {
-
     models.mnasnet:models.mnasnet.__all__[1:],
     models.resnet: models.resnet.__all__[1:4],
     models.densenet: models.densenet.__all__[1:],
@@ -220,7 +209,62 @@ def get_per_model_mean_time(data_dir):
     
     # print(all_model_time)
     return all_model_time
-    
+
+def get_sub_dir(parent_dir):
+    files = os.listdir(parent_dir)
+    sub_dirs = []
+    for file in files:
+        if os.path.isdir(os.path.join(parent_dir,file)):
+            sub_dirs.append(file)
+    return sub_dirs
+
+
+
+def insert_series_to_df(df,env,gpu,phase,precision,average_time):
+    for model,time in average_time.iteritems():
+        df = df.append({"envs":env,"gpus":gpu,"models":model,"phases":phase,"precisions":precision,"time":int(time)},ignore_index=True)
+    return df
+
+def build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir):
+    files = os.listdir(benchmark_csv_files_dir)
+    csv_files = []
+    for file in files:
+        if file.endswith('.csv'):
+            csv_files.append(file)
+
+    df = pd.DataFrame(columns = DF_COLUMNS)
+    for file in csv_files:
+        data = pd.read_csv(os.path.join(benchmark_csv_files_dir,file),index_col=False)
+        average_time = data.mean()
+        if 'train'in file and 'half' in file:
+            df = insert_series_to_df(df,env,gpu,'train','half',average_time)
+        elif 'train'in file and 'float' in file:
+            df = insert_series_to_df(df,env,gpu,'train','float',average_time)
+        elif 'train'in file and 'double' in file:
+            df = insert_series_to_df(df,env,gpu,'train','double',average_time)
+        elif 'inference'in file and 'half' in file:
+            df = insert_series_to_df(df,env,gpu,'inference','half',average_time)
+        elif 'inference'in file and 'float' in file:
+            df = insert_series_to_df(df,env,gpu,'inference','float',average_time)
+        elif 'inference'in file and 'double' in file:
+            df = insert_series_to_df(df,env,gpu,'inference','double',average_time)
+        else:
+            raise Exception("error file: ",file)
+    return df
+
+def build_big_data_frame_for_benchmark(experiment_result):
+    envs = get_sub_dir(experiment_result)
+    big_data_frame = pd.DataFrame(columns = DF_COLUMNS)
+    for env in envs:
+        gpus = get_sub_dir(os.path.join(experiment_result,env))
+        # 先写个假的
+        gpus = ['GeForce_RTX_2080_1_gpus']
+        for gpu in gpus:
+            benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
+            small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir);
+            big_data_frame = pd.concat([big_data_frame, small_data_frame], axis=0, ignore_index=True)
+    # big_data_frame.to_csv("./big_data_frame.csv")
+    return big_data_frame
 
 # times 单位是 ms，取整
 def get_model_time(average_time):
@@ -300,22 +344,35 @@ def get_gpus_intersection(experiment_result,envs):
 
 def get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu):
     envs_benchmark = {}
-
     for env in envs:
         model_benchmark_dir = os.path.join(experiment_result,env,gpu,'data')
         all_model_time = get_per_model_mean_time(model_benchmark_dir)
         envs_benchmark[env] = all_model_time
-        # print(env_benchmark)
-    print(envs_benchmark)
+    # print(envs_benchmark)
     return envs_benchmark
     
+def plot_image_with_gpu_benchmark_between_envs(gpu,envs_benchmark):
+    benchmark_images_save_dir = ENVS_BENCHMARK_IMAGE_SAVE_DIR
+    if not os.exists.path(benchmark_images_save_dir):
+        os.makedirs(benchmark_images_save_dir)
+    pass 
+   
+    
+
 def compare_between_envs(experiment_result,envs):
     gpus,envs_gpus = get_gpus_intersection(experiment_result,envs)
     print("gpus: ",gpus)
     if len(gpus) == 0:
         raise Exception("not found save gpu between envs !",env_gpus) 
+    
+    big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
+    
+
+
+    assert 1==2
+    
     for gpu in gpus:
-        envs_benchmark =get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu)
+        envs_benchmark = get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu)
 
 
 
