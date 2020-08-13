@@ -28,6 +28,8 @@ MODEL_LIST = {
 }
 
 precisions=["float","half",'double']
+phases = ['train','inference']
+
 device_name=str(torch.cuda.get_device_name(0))
 
 # Training settings
@@ -257,8 +259,6 @@ def build_big_data_frame_for_benchmark(experiment_result):
     big_data_frame = pd.DataFrame(columns = DF_COLUMNS)
     for env in envs:
         gpus = get_sub_dir(os.path.join(experiment_result,env))
-        # 先写个假的
-        gpus = ['GeForce_RTX_2080_1_gpus']
         for gpu in gpus:
             benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
             small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir);
@@ -351,12 +351,49 @@ def get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu
     # print(envs_benchmark)
     return envs_benchmark
     
-def plot_image_with_gpu_benchmark_between_envs(gpu,envs_benchmark):
+def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame):
     benchmark_images_save_dir = ENVS_BENCHMARK_IMAGE_SAVE_DIR
-    if not os.exists.path(benchmark_images_save_dir):
+    if not os.path.exists(benchmark_images_save_dir):
         os.makedirs(benchmark_images_save_dir)
-    pass 
-   
+    
+    df_envs_models_time = big_data_frame[(big_data_frame.gpus==gpu) & (big_data_frame.phases==phase) & (big_data_frame.precisions==precision)]
+    envs = list(set(df_envs_models_time['envs'].tolist()))
+    
+    model_time_dict = {}
+    for index, rows in df_envs_models_time.iterrows():
+        # 这块代码是因为测试数据中有脏数据，先选densene完成画图，后期这个代码要删掉。
+        if not rows.models.startswith("densene"):
+            continue
+        if rows.models in model_time_dict:
+            model_time_dict[rows.models].append(rows.time)
+        else:
+            model_time_dict[rows.models] = [rows.time]
+    # print(model_time_dict)
+
+
+    plt.figure(figsize=(10,20))
+    envs_index = [i for i in range(len(envs))]
+    print("envs_index: ",envs_index)
+    for model,times in model_time_dict.items():
+        plt.plot_date(envs_index,times,'-',label=model,linewidth=3,marker='o',markersize=10)
+        
+        for index in envs_index:
+            plt.text(index,times[index]+0.25, times[index] , fontsize=12)
+    
+    plt.xticks(envs_index, envs,fontsize=14)
+    plt.yticks(fontsize=14)
+    plt.xlabel("Envs",fontsize=18)
+    plt.ylabel("Time",fontsize=18)
+    plt.legend()
+    plt.title('{} {} models with {} precision'.format(gpu,phase,precision),fontsize=18)
+    save_path = os.path.join(benchmark_images_save_dir,"demo.png")
+    
+    
+    
+    plt.savefig(save_path)
+    
+    
+    assert 1==2
     
 
 def compare_between_envs(experiment_result,envs):
@@ -366,13 +403,11 @@ def compare_between_envs(experiment_result,envs):
         raise Exception("not found save gpu between envs !",env_gpus) 
     
     big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
-    
-
-
-    assert 1==2
-    
+        
     for gpu in gpus:
-        envs_benchmark = get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu)
+        for phase in phases:
+            for precision in precisions:
+                plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame)
 
 
 
