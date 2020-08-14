@@ -27,7 +27,6 @@ MODEL_LIST = {
     models.shufflenetv2:models.shufflenetv2.__all__[1:]
 }
 
-# MODEL_GROUP_LIST = ['mnasnet','resnet','densenet','squeezenet','vgg','mobilenet','shufflenet']
 
 precisions=["float","half",'double']
 phases = ['train','inference']
@@ -352,34 +351,40 @@ def get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu
         envs_benchmark[env] = all_model_time
     # print(envs_benchmark)
     return envs_benchmark
-    
+
+
+
 def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame):
     benchmark_images_save_dir = ENVS_BENCHMARK_IMAGE_SAVE_DIR
     if not os.path.exists(benchmark_images_save_dir):
         os.makedirs(benchmark_images_save_dir)
     
     df_envs_models_time = big_data_frame[(big_data_frame.gpus==gpu) & (big_data_frame.phases==phase) & (big_data_frame.precisions==precision)]
+    models = list(set(df_envs_models_time['models'].tolist()))
     envs = list(set(df_envs_models_time['envs'].tolist()))
     
-    model_time_dict = {}
+    envs_time_dict = {}
     for index, rows in df_envs_models_time.iterrows():
-        if rows.models in model_time_dict:
-            model_time_dict[rows.models].append(rows.time)
+        # print(index,rows)
+        if rows.envs in envs_time_dict:
+            envs_time_dict[rows.envs].append(rows.time)
         else:
-            model_time_dict[rows.models] = [rows.time]
+            envs_time_dict[rows.envs] = [rows.time]
 
-    plotdata = pd.DataFrame(model_time_dict,index = envs)
-    plotdata.plot(figsize=(20,10),kind="bar",rot=0)
+    envs_time_dict = {key:value for key,value in sorted(envs_time_dict.items())}
 
-    plt.xlabel("Envs",fontsize=18)
-    plt.ylabel("Time",fontsize=18)
+    plotdata = pd.DataFrame(envs_time_dict,index = models)
+    plotdata.plot(figsize=(30,13),kind="bar",rot=-15)
 
-    plt.title('{} {} models with {} precision'.format(gpu,phase,precision),fontsize=18)
+    plt.xlabel("Models",fontsize=14)
+    plt.ylabel("Time",fontsize=14)
+
+    plt.title('{} {} models with {} precision'.format(gpu,phase,precision),fontsize=16)
     plt_image_name = '{} {}_models_with_{}_precision_between_{}'.format(gpu,phase,precision,"_".join(sorted(envs)))
     save_path = os.path.join(benchmark_images_save_dir,plt_image_name)
     plt.savefig(save_path)
     
-
+    
 def compare_between_envs(experiment_result,envs):
     gpus,envs_gpus = get_gpus_intersection(experiment_result,envs)
     # print("gpus: ",gpus)
