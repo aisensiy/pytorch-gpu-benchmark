@@ -362,8 +362,8 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     model_time_dict = {}
     for index, rows in df_envs_models_time.iterrows():
         # 这块代码是因为测试数据中有脏数据，先选densene完成画图，后期这个代码要删掉。
-        if not rows.models.startswith("densene"):
-            continue
+        # if not rows.models.startswith("densene"):
+        #     continue
         if rows.models in model_time_dict:
             model_time_dict[rows.models].append(rows.time)
         else:
@@ -386,14 +386,9 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     plt.ylabel("Time",fontsize=18)
     plt.legend()
     plt.title('{} {} models with {} precision'.format(gpu,phase,precision),fontsize=18)
-    save_path = os.path.join(benchmark_images_save_dir,"demo.png")
-    
-    
-    
+    plt_image_name = '{} {}_models_with_{}_precision_between_{}'.format(gpu,phase,precision,"_".join(envs))
+    save_path = os.path.join(benchmark_images_save_dir,plt_image_name)
     plt.savefig(save_path)
-    
-    
-    assert 1==2
     
 
 def compare_between_envs(experiment_result,envs):
