@@ -173,46 +173,6 @@ def experiment(env_name,device_name):
     with open(os.path.join(experiment_result_data_dir,"system_info.txt"), "a") as f:
         f.writelines('benchmark end : '+end_time+'\n')
 
-
-def get_per_model_mean_time(data_dir):
-    benchmarks = []
-    files = os.listdir(data_dir)
-    for file in files:
-        if file.endswith('.csv'):
-            benchmarks.append(file)
-
-    all_model_time = {'train':{'half':{},'float':{},'double':{}},
-                       'inference':{'half':{},'float':{},'double':{}} }
-
-    for file in benchmarks:
-        # print("file: ",os.path.join(data_dir,file))
-        data = pd.read_csv(os.path.join(data_dir,file),index_col=False)
-        # print(data)
-        average_time = data.mean()
-        # print(average_time)
-    
-        if 'train'in file and 'half' in file:
-            all_model_time['train']['half'] =  get_model_time(average_time)
-        elif 'train'in file and 'float' in file:
-   
-            all_model_time['train']['float'] = get_model_time(average_time)
-        elif 'train'in file and 'double' in file:
-    
-            all_model_time['train']['double'] = get_model_time(average_time)
-        elif 'inference'in file and 'half' in file:
-     
-            all_model_time['inference']['half'] = get_model_time(average_time)
-        elif 'inference'in file and 'float' in file:
-   
-            all_model_time['inference']['float'] = get_model_time(average_time)
-        elif 'inference'in file and 'double' in file:
-            all_model_time['inference']['double'] = get_model_time(average_time)
-        else:
-            raise Exception("error file: ",file)
-    
-    # print(all_model_time)
-    return all_model_time
-
 def get_sub_dir(parent_dir):
     files = os.listdir(parent_dir)
     sub_dirs = []
@@ -220,7 +180,6 @@ def get_sub_dir(parent_dir):
         if os.path.isdir(os.path.join(parent_dir,file)):
             sub_dirs.append(file)
     return sub_dirs
-
 
 
 def insert_series_to_df(df,env,gpu,phase,precision,average_time):
@@ -274,27 +233,16 @@ def get_model_time(average_time):
     # print(sorted_dict)
     return sorted_dict
 
-
-def gen_model_name_time_list(model_times_dict):
-    names = []
-    times = []
-    for name, time in model_times_dict.items():
-        names.append(name)
-        times.append(time)
-    return names, times
-
 def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
     # 在train、infrence 过程中，三种数据类型下的各个 model 的运行时间。总共6张图。
-    for phase, info in models_time_info.items():
-        for precision, model_times in info.items():
-
-            if phase == 'inference':
-                print(phase,precision,model_times)
-            names, times = gen_model_name_time_list(model_times)
-
+    for phase in phases:
+        for precision in precisions:
             plt_name = "{}_{}_{}.png".format(gpu,phase,precision)
             plt_save_path = os.path.join(save_image_dir,plt_name)
             
+            names = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['models'].tolist()
+            times = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['time'].tolist()
+
             name_index = [i for i in range(len(names))]
             plt.figure(figsize=(20, 10), dpi=100)
             plt.barh(name_index,times,color='b',alpha=0.4)
@@ -317,13 +265,15 @@ def get_gpus(gpus_dir):
     return gpus
 
 def different_models_on_same_gpu(experiment_result,envs):
+    big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
+
     for env in envs:
         gpus_dir = os.path.join(experiment_result,env)
-        gpus = get_gpus(gpus_dir)
+        gpus = get_sub_dir(gpus_dir)
         # 先写个假的
         # gpus = ['GeForce_RTX_2080_1_gpus']
         for gpu in gpus:
-            all_model_time = get_per_model_mean_time(os.path.join(gpus_dir,gpu,'data'))
+            all_model_time = big_data_frame[(big_data_frame.envs== env) & (big_data_frame.gpus == gpu)]
             save_image_dir = os.path.join(gpus_dir,gpu,'images')
             if not os.path.exists(save_image_dir):
                 os.makedirs(save_image_dir)
@@ -335,23 +285,10 @@ def get_gpus_intersection(experiment_result,envs):
     all_gpus = []
     for env in envs:
         gpus_dir = os.path.join(experiment_result,env)
-        gpus = get_gpus(gpus_dir)
+        gpus = get_sub_dir(gpus_dir)
         all_gpus.append(gpus)
-        envs_gpus[env] = get_gpus(gpus_dir)
-    # print("env_gpus: ",env_gpus)
-    # print("all_gpus: ",all_gpus)
+        envs_gpus[env] = get_sub_dir(gpus_dir)
     return list(set.intersection(*map(set,all_gpus))),envs_gpus
-
-
-def get_models_run_time_on_same_gpu_in_different_envs(experiment_result,envs,gpu):
-    envs_benchmark = {}
-    for env in envs:
-        model_benchmark_dir = os.path.join(experiment_result,env,gpu,'data')
-        all_model_time = get_per_model_mean_time(model_benchmark_dir)
-        envs_benchmark[env] = all_model_time
-    # print(envs_benchmark)
-    return envs_benchmark
-
 
 
 def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame):
@@ -387,24 +324,18 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     
 def compare_between_envs(experiment_result,envs):
     gpus,envs_gpus = get_gpus_intersection(experiment_result,envs)
-    # print("gpus: ",gpus)
     if len(gpus) == 0:
-        print("not found save gpu between envs! ",env_gpus)
-        # raise Exception("not found save gpu between envs !",env_gpus) 
+        print("not found save gpu between envs! ",env_gpus) 
         return 
     
     big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
-        
     for gpu in gpus:
         for phase in phases:
             for precision in precisions:
                 plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame)
 
 
-
-
 def statistic_experiment_result(env_name,device_name):
-    
     experiment_result = "./experiment_results"
     files = os.listdir(experiment_result)
     envs = []
@@ -418,18 +349,12 @@ def statistic_experiment_result(env_name,device_name):
         compare_between_envs(experiment_result,envs)
         pass
 
-    
-
-
-
-
-
 
 if __name__ == '__main__':
 
     env_name=args.ENVIRONMENT
     device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
 
-    # experiment(env_name,device_name)
+    experiment(env_name,device_name)
 
     statistic_experiment_result(env_name,device_name)
