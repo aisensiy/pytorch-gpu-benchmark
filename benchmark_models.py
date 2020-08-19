@@ -342,12 +342,12 @@ def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,
         os.makedirs(gpu_benchmark_images_save_dir)
     df_gpus_models_time = big_data_frame[(big_data_frame.envs ==env) & (big_data_frame.phases == phase) & (big_data_frame.precisions == precision)]
 
-    models = list(set(df_envs_models_time['models'].tolist()))
-    gpus = list(set(df_envs_models_time['gpus'].tolist()))
+    models = list(set(df_gpus_models_time['models'].tolist()))
+    gpus = list(set(df_gpus_models_time['gpus'].tolist()))
     
     gpus_time_dict = {}
     for index, rows in df_gpus_models_time.iterrows():
-        if rows.gpus in envs_time_dict:
+        if rows.gpus in gpus_time_dict:
             gpus_time_dict[rows.gpus].append(rows.time)
         else:
             gpus_time_dict[rows.gpus] = [rows.time]
@@ -398,14 +398,14 @@ def statistic_experiment_result(env_name,device_name):
 
 if __name__ == '__main__':
 
-    env_name=args.ENVIRONMENT
-    device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
+#     env_name=args.ENVIRONMENT
+#     device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
 
-    experiment(env_name,device_name)
+#     experiment(env_name,device_name)
 
-    statistic_experiment_result(env_name,device_name)
+#     statistic_experiment_result(env_name,device_name)
 
     # 先写个假的，做测试用
-    experiment_result = './experiment_result'
+    experiment_result = './experiment_results'
     env = 'openbayes'
-    compare_between_gpus(experiment_result,envs)
+    compare_between_gpus(experiment_result,env)
