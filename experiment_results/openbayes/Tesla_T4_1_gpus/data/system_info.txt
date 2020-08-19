@@ -1,0 +1,14 @@
+benchmark start : 2020/08/18 15:10:49
+system_configs
+
+uname_result(system='Linux', node='aisensiy-258hofxxg1wt-main', release='4.15.0-109-generic', version='#110-Ubuntu SMP Tue Jun 23 02:39:32 UTC 2020', machine='x86_64', processor='x86_64')
+scpufreq(current=1588.2863392857146, min=1200.0, max=3300.0)
+cpu_count: 56
+memory_available: 525666050048
+gpu_configs
+
+Number of GPUs on current device : 1
+CUDA Version : 10.1
+Cudnn Version : 7603
+Device Name : Tesla T4
+benchmark end : 2020/08/18 16:41:41

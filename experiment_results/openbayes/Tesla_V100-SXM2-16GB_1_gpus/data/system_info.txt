@@ -1,0 +1,14 @@
+benchmark start : 2020/08/18 23:19:17
+system_configs
+
+uname_result(system='Linux', node='aisensiy-utegx3a3ihfq-main', release='4.15.0-106-generic', version='#107-Ubuntu SMP Thu Jun 4 11:27:52 UTC 2020', machine='x86_64', processor='x86_64')
+scpufreq(current=1691.6448374999995, min=1200.0, max=3600.0)
+cpu_count: 80
+memory_available: 506915962880
+gpu_configs
+
+Number of GPUs on current device : 1
+CUDA Version : 10.1
+Cudnn Version : 7603
+Device Name : Tesla V100-SXM2-16GB
+benchmark end : 2020/08/18 23:43:44

@@ -15,6 +15,7 @@ torch.backends.cudnn.benchmark = True
 
 RESULT_ROOT_DIR = './experiment_results'
 ENVS_BENCHMARK_IMAGE_SAVE_DIR = './envs_benchmark_result'
+GPUS_BENCHMARK_IMAGE_SAVE_DIR = './gpus_benchmark_result'
 DF_COLUMNS = ['envs','gpus','models','phases','precisions','time']
 
 MODEL_LIST = {
@@ -239,7 +240,8 @@ def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
         for precision in precisions:
             plt_name = "{}_{}_{}.png".format(gpu,phase,precision)
             plt_save_path = os.path.join(save_image_dir,plt_name)
-            
+
+            models_time_info.sort_values(by=['models'], inplace=True)
             names = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['models'].tolist()
             times = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['time'].tolist()
 
@@ -333,7 +335,49 @@ def compare_between_envs(experiment_result,envs):
         for phase in phases:
             for precision in precisions:
                 plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame)
+ 
+def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,big_data_frame):
+    gpu_benchmark_images_save_dir = GPUS_BENCHMARK_IMAGE_SAVE_DIR
+    if not os.path.exists(gpu_benchmark_images_save_dir):
+        os.makedirs(gpu_benchmark_images_save_dir)
+    df_gpus_models_time = big_data_frame[(big_data_frame.envs ==env) & (big_data_frame.phases == phase) & (big_data_frame.precisions == precision)]
 
+    models = list(set(df_envs_models_time['models'].tolist()))
+    gpus = list(set(df_envs_models_time['gpus'].tolist()))
+    
+    gpus_time_dict = {}
+    for index, rows in df_gpus_models_time.iterrows():
+        if rows.gpus in envs_time_dict:
+            gpus_time_dict[rows.gpus].append(rows.time)
+        else:
+            gpus_time_dict[rows.gpus] = [rows.time]
+
+    plotdata = pd.DataFrame(gpus_time_dict,index = models)
+    plotdata.plot(figsize=(30,13),kind="bar",rot=-15)
+
+    plt.xlabel("Models",fontsize=14)
+    plt.ylabel("Time",fontsize=14)
+
+    plt.title('{} models with {} precision on multiples gpus'.format(phase,precision),fontsize=16)
+    plt_image_name = '{}_models_with_{}_precision_on_gpus_{}'.format(phase,precision,"_".join(sorted(gpus)))
+    save_path = os.path.join(gpu_benchmark_images_save_dir,plt_image_name)
+    plt.savefig(save_path)
+
+    pass
+
+def compare_between_gpus(experiment_result,envs):
+    env = 'openbayes'
+    gpus_dir = os.path.join(experiment_result,env)
+    gpus = get_sub_dir(gpus_dir)
+    if len(gpus)<2:
+        print("gpus nums is : {}, not compare!".format(len(gpus)))
+        return
+    
+    big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
+    for phase in phases:
+        for precision in precisions:
+            plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,big_data_frame)
+    pass
 
 def statistic_experiment_result(env_name,device_name):
     experiment_result = "./experiment_results"
@@ -345,6 +389,8 @@ def statistic_experiment_result(env_name,device_name):
             envs.append(file)
 
     different_models_on_same_gpu(experiment_result,envs)
+    compare_between_gpus(experiment_result,envs)
+
     if len(envs) > 1:
         compare_between_envs(experiment_result,envs)
         pass
@@ -352,9 +398,13 @@ def statistic_experiment_result(env_name,device_name):
 
 if __name__ == '__main__':
 
-    env_name=args.ENVIRONMENT
-    device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
+    # env_name=args.ENVIRONMENT
+    # device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
 
-    experiment(env_name,device_name)
+    # experiment(env_name,device_name)
 
-    statistic_experiment_result(env_name,device_name)
+    # statistic_experiment_result(env_name,device_name)
+
+    experiment_result = './experiment_result'
+    env = 'openbayes'
+    compare_between_gpus(experiment_result,envs)
