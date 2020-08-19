@@ -338,8 +338,9 @@ def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,
     if not os.path.exists(gpu_benchmark_images_save_dir):
         os.makedirs(gpu_benchmark_images_save_dir)
     df_gpus_models_time = big_data_frame[(big_data_frame.envs ==env) & (big_data_frame.phases == phase) & (big_data_frame.precisions == precision)]
-
-    models = list(set(df_gpus_models_time['models'].tolist()))
+    df_gpus_models_time = df_gpus_models_time.sort_values(['gpus','models'])
+    
+    models = []
     gpus = list(set(df_gpus_models_time['gpus'].tolist()))
     
     gpus_time_dict = {}
@@ -348,6 +349,8 @@ def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,
             gpus_time_dict[rows.gpus].append(rows.time)
         else:
             gpus_time_dict[rows.gpus] = [rows.time]
+        if rows.models not in models:
+            models.append(rows.models)
 
     plotdata = pd.DataFrame(gpus_time_dict,index = models)
     plotdata = plotdata.sort_index(axis = 1)
@@ -368,7 +371,7 @@ def compare_between_gpus(experiment_result,envs):
     env = 'openbayes'
     gpus_dir = os.path.join(experiment_result,env)
     gpus = get_sub_dir(gpus_dir)
-    if len(gpus)<2:
+    if len(gpus) < 2:
         print("gpus nums is : {}, not compare!".format(len(gpus)))
         return
     
@@ -387,7 +390,7 @@ def statistic_experiment_result(env_name,device_name):
         if os.path.isdir(file_path):
             envs.append(file)
 
-#     different_models_on_same_gpu(experiment_result,envs)
+    different_models_on_same_gpu(experiment_result,envs)
 #     compare_between_gpus(experiment_result,envs)
 
     if len(envs) > 1:
@@ -402,9 +405,9 @@ if __name__ == '__main__':
 
 #     experiment(env_name,device_name)
 
-    statistic_experiment_result(env_name,device_name)
+#     statistic_experiment_result(env_name,device_name)
 
-    # 先写个假的，做测试用
-#     experiment_result = './experiment_results'
-#     env = 'openbayes'
-#     compare_between_gpus(experiment_result,env)
+#     先写个假的，做测试用
+    experiment_result = './experiment_results'
+    env = 'openbayes'
+    compare_between_gpus(experiment_result,env)
