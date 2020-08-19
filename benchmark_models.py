@@ -10,6 +10,7 @@ import shutil
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 torch.backends.cudnn.benchmark = True
 
@@ -227,30 +228,25 @@ def build_big_data_frame_for_benchmark(experiment_result):
     # big_data_frame.to_csv("./big_data_frame.csv")
     return big_data_frame
 
-# times 单位是 ms，取整
-def get_model_time(average_time):
-    model_time_dict = {name:int(time) for name, time in average_time.iteritems()}
-    sorted_dict = {name:time for name,time in sorted(model_time_dict.items())}
-    # print(sorted_dict)
-    return sorted_dict
-
 def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
     # 在train、infrence 过程中，三种数据类型下的各个 model 的运行时间。总共6张图。
     for phase in phases:
         for precision in precisions:
             plt_name = "{}_{}_{}.png".format(gpu,phase,precision)
             plt_save_path = os.path.join(save_image_dir,plt_name)
-
+            
             models_time_info.sort_values(by=['models'], inplace=True)
+            
             names = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['models'].tolist()
             times = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['time'].tolist()
-
+            
             name_index = [i for i in range(len(names))]
             plt.figure(figsize=(20, 10), dpi=100)
             plt.barh(name_index,times,color='b',alpha=0.4)
             plt.yticks(name_index, names,fontsize=14)
             for i in range(len(names)):
                 plt.text(times[i],name_index[i]-0.25, times[i] , fontsize=12)
+                        
             plt.xlabel('Time(ms)', fontsize=18)
             plt.ylabel('Model', fontsize=16)
             plt_title = '{} {} models with {} precision'.format(gpu,phase,precision) 
@@ -353,8 +349,10 @@ def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,
             gpus_time_dict[rows.gpus] = [rows.time]
 
     plotdata = pd.DataFrame(gpus_time_dict,index = models)
+    plotdata = plotdata.sort_index(axis = 1)
+    plotdata = plotdata.sort_index(axis = 0)
+  
     plotdata.plot(figsize=(30,13),kind="bar",rot=-15)
-
     plt.xlabel("Models",fontsize=14)
     plt.ylabel("Time",fontsize=14)
 
@@ -389,23 +387,23 @@ def statistic_experiment_result(env_name,device_name):
             envs.append(file)
 
     different_models_on_same_gpu(experiment_result,envs)
-    compare_between_gpus(experiment_result,envs)
+#     compare_between_gpus(experiment_result,envs)
 
     if len(envs) > 1:
-        compare_between_envs(experiment_result,envs)
+#         compare_between_envs(experiment_result,envs)
         pass
 
 
 if __name__ == '__main__':
 
-#     env_name=args.ENVIRONMENT
-#     device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
+    env_name=args.ENVIRONMENT
+    device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
 
 #     experiment(env_name,device_name)
 
-#     statistic_experiment_result(env_name,device_name)
+    statistic_experiment_result(env_name,device_name)
 
     # 先写个假的，做测试用
-    experiment_result = './experiment_results'
-    env = 'openbayes'
-    compare_between_gpus(experiment_result,env)
+#     experiment_result = './experiment_results'
+#     env = 'openbayes'
+#     compare_between_gpus(experiment_result,env)
