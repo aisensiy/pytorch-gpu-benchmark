@@ -314,7 +314,7 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     plotdata = plotdata.sort_index(axis = 1)
     plotdata = plotdata.sort_index(axis = 0)
     
-    plotdata.plot(figsize=(30,13),kind="bar",rot=-15)
+    plotdata.plot(figsize=(30,13),kind="bar",rot=-15,alpha=0.4)
 
     plt.xlabel("Models",fontsize=14)
     plt.ylabel("Time",fontsize=14)
@@ -360,7 +360,7 @@ def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,
     plotdata = plotdata.sort_index(axis = 1)
     plotdata = plotdata.sort_index(axis = 0)
   
-    plotdata.plot(figsize=(30,13),kind="bar",rot=-15)
+    plotdata.plot(figsize=(30,13),kind="bar",rot=-15,alpha=0.4)
     plt.xlabel("Models",fontsize=14)
     plt.ylabel("Time",fontsize=14)
 
@@ -409,9 +409,9 @@ if __name__ == '__main__':
 
 #     experiment(env_name,device_name)
 
-    statistic_experiment_result(env_name,device_name)
+#     statistic_experiment_result(env_name,device_name)
 
 #     先写个假的，做测试用
-#     experiment_result = './experiment_results'
-#     env = 'openbayes'
-#     compare_between_gpus(experiment_result,env)
+    experiment_result = './experiment_results'
+    env = 'openbayes'
+    compare_between_gpus(experiment_result,env)
