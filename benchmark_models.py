@@ -398,13 +398,14 @@ def statistic_experiment_result(env_name,device_name):
 
 if __name__ == '__main__':
 
-    # env_name=args.ENVIRONMENT
-    # device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
+    env_name=args.ENVIRONMENT
+    device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
 
-    # experiment(env_name,device_name)
+    experiment(env_name,device_name)
 
-    # statistic_experiment_result(env_name,device_name)
+    statistic_experiment_result(env_name,device_name)
 
+    # 先写个假的，做测试用
     experiment_result = './experiment_result'
     env = 'openbayes'
     compare_between_gpus(experiment_result,envs)
