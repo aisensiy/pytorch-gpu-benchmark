@@ -295,7 +295,9 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
         os.makedirs(benchmark_images_save_dir)
     
     df_envs_models_time = big_data_frame[(big_data_frame.gpus==gpu) & (big_data_frame.phases==phase) & (big_data_frame.precisions==precision)]
-    models = list(set(df_envs_models_time['models'].tolist()))
+    df_envs_models_time = df_envs_models_time.sort_values(['envs','models'])
+    
+    models = []
     envs = list(set(df_envs_models_time['envs'].tolist()))
     
     envs_time_dict = {}
@@ -305,6 +307,8 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
             envs_time_dict[rows.envs].append(rows.time)
         else:
             envs_time_dict[rows.envs] = [rows.time]
+        if rows.models not in models:
+            models.append(rows.models)
 
     plotdata = pd.DataFrame(envs_time_dict,index = models)
     plotdata = plotdata.sort_index(axis = 1)
@@ -390,7 +394,7 @@ def statistic_experiment_result(env_name,device_name):
         if os.path.isdir(file_path):
             envs.append(file)
 
-    different_models_on_same_gpu(experiment_result,envs)
+#     different_models_on_same_gpu(experiment_result,envs)
 #     compare_between_gpus(experiment_result,envs)
 
     if len(envs) > 1:
@@ -405,9 +409,9 @@ if __name__ == '__main__':
 
 #     experiment(env_name,device_name)
 
-#     statistic_experiment_result(env_name,device_name)
+    statistic_experiment_result(env_name,device_name)
 
 #     先写个假的，做测试用
-    experiment_result = './experiment_results'
-    env = 'openbayes'
-    compare_between_gpus(experiment_result,env)
+#     experiment_result = './experiment_results'
+#     env = 'openbayes'
+#     compare_between_gpus(experiment_result,env)
