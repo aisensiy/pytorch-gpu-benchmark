@@ -306,9 +306,10 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
         else:
             envs_time_dict[rows.envs] = [rows.time]
 
-    envs_time_dict = {key:value for key,value in sorted(envs_time_dict.items())}
-
     plotdata = pd.DataFrame(envs_time_dict,index = models)
+    plotdata = plotdata.sort_index(axis = 1)
+    plotdata = plotdata.sort_index(axis = 0)
+    
     plotdata.plot(figsize=(30,13),kind="bar",rot=-15)
 
     plt.xlabel("Models",fontsize=14)
@@ -386,11 +387,11 @@ def statistic_experiment_result(env_name,device_name):
         if os.path.isdir(file_path):
             envs.append(file)
 
-    different_models_on_same_gpu(experiment_result,envs)
+#     different_models_on_same_gpu(experiment_result,envs)
 #     compare_between_gpus(experiment_result,envs)
 
     if len(envs) > 1:
-#         compare_between_envs(experiment_result,envs)
+        compare_between_envs(experiment_result,envs)
         pass
 
 
