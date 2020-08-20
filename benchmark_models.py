@@ -10,7 +10,7 @@ import shutil
 import numpy as np
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
-import seaborn as sns
+import pynvml as nvml
 
 torch.backends.cudnn.benchmark = True
 
@@ -37,12 +37,16 @@ device_name=str(torch.cuda.get_device_name(0))
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch Benchmarking')
+
+parser.add_argument('opertation',type=str,choices=['run','gpu','env'],help='opertation must be run gpu or env')
+parser.add_argument('--ENVS','-es', type=str, nargs='+', required=True,default=[],help='Name of enviroment')
+parser.add_argument('--GPUS','-gs',type=str, nargs='*',required=False,help='Name of gpu')
 parser.add_argument('--WARM_UP','-w', type=int,default=5, required=False, help="Num of warm up")
 parser.add_argument('--NUM_TEST','-n', type=int,default=50,required=False, help="Num of Test")
 parser.add_argument('--BATCH_SIZE','-b', type=int, default=12, required=False, help='Num of batch size')
 parser.add_argument('--NUM_CLASSES','-c', type=int, default=1000, required=False, help='Num of class')
 parser.add_argument('--NUM_GPU','-g', type=int, default=1, required=False, help='Num of gpus')
-parser.add_argument('--ENVIRONMENT','-e', type=str, default='openbayes', required=False, help='Name of enviroment')
+
 args = parser.parse_args()
 args.BATCH_SIZE*=args.NUM_GPU
 
@@ -200,11 +204,11 @@ def build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir):
     for file in csv_files:
         data = pd.read_csv(os.path.join(benchmark_csv_files_dir,file),index_col=False)
         average_time = data.mean()
-        if 'train'in file and 'half' in file:
+        if 'train' in file and 'half' in file:
             df = insert_series_to_df(df,env,gpu,'train','half',average_time)
-        elif 'train'in file and 'float' in file:
+        elif 'train' in file and 'float' in file:
             df = insert_series_to_df(df,env,gpu,'train','float',average_time)
-        elif 'train'in file and 'double' in file:
+        elif 'train' in file and 'double' in file:
             df = insert_series_to_df(df,env,gpu,'train','double',average_time)
         elif 'inference'in file and 'half' in file:
             df = insert_series_to_df(df,env,gpu,'inference','half',average_time)
@@ -223,7 +227,7 @@ def build_big_data_frame_for_benchmark(experiment_result):
         gpus = get_sub_dir(os.path.join(experiment_result,env))
         for gpu in gpus:
             benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
-            small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir);
+            small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
             big_data_frame = pd.concat([big_data_frame, small_data_frame], axis=0, ignore_index=True)
     # big_data_frame.to_csv("./big_data_frame.csv")
     return big_data_frame
@@ -394,24 +398,56 @@ def statistic_experiment_result(env_name,device_name):
         if os.path.isdir(file_path):
             envs.append(file)
 
-#     different_models_on_same_gpu(experiment_result,envs)
+    different_models_on_same_gpu(experiment_result,envs)
 #     compare_between_gpus(experiment_result,envs)
 
-    if len(envs) > 1:
-        compare_between_envs(experiment_result,envs)
-        pass
+    # if len(envs) > 1:
+    #     compare_between_envs(experiment_result,envs)
+    #     pass
 
+
+
+def run_models_on_special_gpu():
+    if len(args.ENVS) != 1:
+        raise Exception("env nums must be one, but current nums is : {}".format(len(args.ENVS)),args.ENVS)
+    env=args.ENVS[0]
+    nvml.nvmlInit()
+    gpu_count = nvml.nvmlDeviceGetCount()
+    gpu="".join((device_name.replace(" ","_"), '_' , str(gpu_count), '_gpus'))
+    
+    experiment(env,gpu)
+
+    experiment_result = RESULT_ROOT_DIR
+    benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
+    benchmark_data_frame_gpu_level = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
+    
+    save_image_dir = os.path.join(experiment_result,env,gpu,'images')
+    if not os.path.exists(save_image_dir):
+        os.makedirs(save_image_dir)
+    plot_models_on_same_gpu(benchmark_data_frame_gpu_level,gpu,save_image_dir)
 
 if __name__ == '__main__':
 
-    env_name=args.ENVIRONMENT
-    device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
+
+    if args.opertation  == 'run':
+        run_models_on_special_gpu()
+        pass
+    elif argparse.opertation == 'gpu':
+        pass
+    elif argparse.opertation == 'env':
+        pass
+    else:
+        raise Exception("error opertation !",args.opertation)
+    
+
+    # env_name=args.ENVIRONMENT
+    # device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
 
 #     experiment(env_name,device_name)
 
 #     statistic_experiment_result(env_name,device_name)
 
 #     先写个假的，做测试用
-    experiment_result = './experiment_results'
-    env = 'openbayes'
-    compare_between_gpus(experiment_result,env)
+    # experiment_result = './experiment_results'
+    # env = 'openbayes'
+    # compare_between_gpus(experiment_result,env)
