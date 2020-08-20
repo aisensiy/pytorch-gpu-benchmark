@@ -239,7 +239,7 @@ def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
             plt_name = "{}_{}_{}.png".format(gpu,phase,precision)
             plt_save_path = os.path.join(save_image_dir,plt_name)
             
-            models_time_info.sort_values(by=['models'], inplace=True)
+            models_time_info.sort_values(by=['models'], inplace=True, ascending=False)
             
             names = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['models'].tolist()
             times = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['time'].tolist()
@@ -442,20 +442,64 @@ def statistic_benchmark_between_gpus():
     env=args.ENVS[0]
     if len(args.GPUS) < 2:
         raise Exception("gpu nums must more one, but current nums is : {}".format(len(args.GPUS)), args.GPUS)
-    
     gpus = args.GPUS
     existed_gpus_dir  = os.path.join(experiment_result,env)
     existed_gpus = get_sub_dir(existed_gpus_dir)
-
     for gpu in gpus:
         if gpu not in existed_gpus:
             raise Exception("{} not existed !".format(gpu))
 
     gpus_data_frame = build_gpus_data_frame_benchmark(experiment_result,env,gpus)
-    
     for phase in phases:
         for precision in precisions:
             plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,gpus_data_frame)
+
+
+def validate_args_for_statistic_benchmark_between_envs():
+    experiment_result = RESULT_ROOT_DIR
+    if len(args.ENVS) < 2:
+        raise Exception("env nums must more one, but current nums is : {}".format(len(args.ENVS)), args.ENVS)
+    envs = args.ENVS
+    if len(args.GPUS) != 1:
+        raise Exception("gpu nums must be one, but current nums is : {}".format(len(args.GPUS)), args.GPUS)
+    gpu = args.GPUS[0]
+
+    existed_envs = get_sub_dir(experiment_result)
+    for env in envs:
+        if env not in existed_envs:
+            raise Exception("{} not existed !".format(env))
+        existed_gpus = get_sub_dir(os.path.join(experiment_result,env))
+        if gpu not in existed_gpus:
+            raise Exception("{} not existed in {} !".format(gpu, env))
+    return envs, gpu
+
+def build_big_data_frame_for_benchmark(experiment_result):
+    envs = get_sub_dir(experiment_result)
+    big_data_frame = pd.DataFrame(columns = DF_COLUMNS)
+    for env in envs:
+        gpus = get_sub_dir(os.path.join(experiment_result,env))
+        for gpu in gpus:
+            benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
+            small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
+            big_data_frame = pd.concat([big_data_frame, small_data_frame], axis=0, ignore_index=True)
+    # big_data_frame.to_csv("./big_data_frame.csv")
+    return big_data_frame
+
+def build_envs_data_frame_benchmark(experiment_result,envs,gpu):
+    envs_data_frame = pd.DataFrame(columns = DF_COLUMNS)
+    for env in envs:
+        benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
+        small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
+        envs_data_frame = pd.concat([envs_data_frame, small_data_frame], axis=0, ignore_index=True)
+    return envs_data_frame    
+
+def statistic_benchmark_between_envs():
+    envs, gpu  = validate_args_for_statistic_benchmark_between_envs()
+    envs_data_frame = build_envs_data_frame_benchmark(RESULT_ROOT_DIR,envs,gpu)
+
+    for phase in phases:
+        for precision in precisions:
+            plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,envs_data_frame)
 
 
 if __name__ == '__main__':
@@ -465,7 +509,7 @@ if __name__ == '__main__':
     elif args.opertation == 'gpu':
         statistic_benchmark_between_gpus()
     elif args.opertation == 'env':
-        pass
+        statistic_benchmark_between_envs()
     else:
         raise Exception("error opertation !",args.opertation)
     
