@@ -220,18 +220,6 @@ def build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir):
             raise Exception("error file: ",file)
     return df
 
-def build_big_data_frame_for_benchmark(experiment_result):
-    envs = get_sub_dir(experiment_result)
-    big_data_frame = pd.DataFrame(columns = DF_COLUMNS)
-    for env in envs:
-        gpus = get_sub_dir(os.path.join(experiment_result,env))
-        for gpu in gpus:
-            benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
-            small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
-            big_data_frame = pd.concat([big_data_frame, small_data_frame], axis=0, ignore_index=True)
-    # big_data_frame.to_csv("./big_data_frame.csv")
-    return big_data_frame
-
 def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
     # 在train、infrence 过程中，三种数据类型下的各个 model 的运行时间。总共6张图。
     for phase in phases:
@@ -256,42 +244,6 @@ def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
             plt_title = '{} {} models with {} precision'.format(gpu,phase,precision) 
             plt.suptitle(plt_title, fontsize=20)
             plt.savefig(plt_save_path)
-        
-
-def get_gpus(gpus_dir):
-    files = os.listdir(gpus_dir)
-    gpus = []
-    for file in files:
-        if os.path.isdir(os.path.join(gpus_dir,file)):
-            gpus.append(file)
-    return gpus
-
-def different_models_on_same_gpu(experiment_result,envs):
-    big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
-
-    for env in envs:
-        gpus_dir = os.path.join(experiment_result,env)
-        gpus = get_sub_dir(gpus_dir)
-        # 先写个假的
-        # gpus = ['GeForce_RTX_2080_1_gpus']
-        for gpu in gpus:
-            all_model_time = big_data_frame[(big_data_frame.envs== env) & (big_data_frame.gpus == gpu)]
-            save_image_dir = os.path.join(gpus_dir,gpu,'images')
-            if not os.path.exists(save_image_dir):
-                os.makedirs(save_image_dir)
-            plot_models_on_same_gpu(all_model_time,gpu,save_image_dir)
-
-
-def get_gpus_intersection(experiment_result,envs):
-    envs_gpus = {}
-    all_gpus = []
-    for env in envs:
-        gpus_dir = os.path.join(experiment_result,env)
-        gpus = get_sub_dir(gpus_dir)
-        all_gpus.append(gpus)
-        envs_gpus[env] = get_sub_dir(gpus_dir)
-    return list(set.intersection(*map(set,all_gpus))),envs_gpus
-
 
 def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame):
     benchmark_images_save_dir = ENVS_BENCHMARK_IMAGE_SAVE_DIR
@@ -328,18 +280,6 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     save_path = os.path.join(benchmark_images_save_dir,plt_image_name)
     plt.savefig(save_path)
     
-    
-def compare_between_envs(experiment_result,envs):
-    gpus,envs_gpus = get_gpus_intersection(experiment_result,envs)
-    if len(gpus) == 0:
-        print("not found save gpu between envs! ",env_gpus) 
-        return 
-    
-    big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
-    for gpu in gpus:
-        for phase in phases:
-            for precision in precisions:
-                plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame)
  
 def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,big_data_frame):
     gpu_benchmark_images_save_dir = GPUS_BENCHMARK_IMAGE_SAVE_DIR
@@ -373,37 +313,8 @@ def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,
     save_path = os.path.join(gpu_benchmark_images_save_dir,plt_image_name)
     plt.savefig(save_path)
 
-    pass
 
-def compare_between_gpus(experiment_result,envs):
-    env = 'openbayes'
-    gpus_dir = os.path.join(experiment_result,env)
-    gpus = get_sub_dir(gpus_dir)
-    if len(gpus) < 2:
-        print("gpus nums is : {}, not compare!".format(len(gpus)))
-        return
-    
-    big_data_frame = build_big_data_frame_for_benchmark(experiment_result)
-    for phase in phases:
-        for precision in precisions:
-            plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,big_data_frame)
-    pass
 
-def statistic_experiment_result(env_name,device_name):
-    experiment_result = "./experiment_results"
-    files = os.listdir(experiment_result)
-    envs = []
-    for file in files:
-        file_path = os.path.join(experiment_result,file)
-        if os.path.isdir(file_path):
-            envs.append(file)
-
-    different_models_on_same_gpu(experiment_result,envs)
-#     compare_between_gpus(experiment_result,envs)
-
-    # if len(envs) > 1:
-    #     compare_between_envs(experiment_result,envs)
-    #     pass
 
 
 
@@ -473,18 +384,6 @@ def validate_args_for_statistic_benchmark_between_envs():
             raise Exception("{} not existed in {} !".format(gpu, env))
     return envs, gpu
 
-def build_big_data_frame_for_benchmark(experiment_result):
-    envs = get_sub_dir(experiment_result)
-    big_data_frame = pd.DataFrame(columns = DF_COLUMNS)
-    for env in envs:
-        gpus = get_sub_dir(os.path.join(experiment_result,env))
-        for gpu in gpus:
-            benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
-            small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
-            big_data_frame = pd.concat([big_data_frame, small_data_frame], axis=0, ignore_index=True)
-    # big_data_frame.to_csv("./big_data_frame.csv")
-    return big_data_frame
-
 def build_envs_data_frame_benchmark(experiment_result,envs,gpu):
     envs_data_frame = pd.DataFrame(columns = DF_COLUMNS)
     for env in envs:
@@ -512,16 +411,3 @@ if __name__ == '__main__':
         statistic_benchmark_between_envs()
     else:
         raise Exception("error opertation !",args.opertation)
-    
-
-    # env_name=args.ENVIRONMENT
-    # device_name="".join((device_name.replace(" ","_"), '_',str(args.NUM_GPU),'_gpus'))
-
-#     experiment(env_name,device_name)
-
-#     statistic_experiment_result(env_name,device_name)
-
-#     先写个假的，做测试用
-    # experiment_result = './experiment_results'
-    # env = 'openbayes'
-    # compare_between_gpus(experiment_result,env)
