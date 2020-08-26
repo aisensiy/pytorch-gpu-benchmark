@@ -8,10 +8,15 @@ import pandas as pd
 import argparse
 import shutil
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+
 import pynvml as nvml
 
+
+from torch.utils.data import Dataset, DataLoader
 torch.backends.cudnn.benchmark = True
 
 RESULT_ROOT_DIR = './experiment_results'
@@ -125,7 +130,7 @@ def inference(type='float'):
 
 
 def experiment(env_name,device_name):
-    
+
     system_configs=str(platform.uname())
     system_configs='\n'.join((system_configs,str(psutil.cpu_freq()),'cpu_count: '+str(psutil.cpu_count()),'memory_available: '+str(psutil.virtual_memory().available)))
 
@@ -157,7 +162,7 @@ def experiment(env_name,device_name):
         f.writelines('\ngpu_configs\n\n')
         f.writelines(s + '\n' for s in gpu_configs )
 
-    
+
     for precision in precisions:
         train_result=train(precision)
         train_result_df = pd.DataFrame(train_result)
@@ -226,22 +231,22 @@ def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
         for precision in precisions:
             plt_name = "{}_{}_{}.png".format(gpu,phase,precision)
             plt_save_path = os.path.join(save_image_dir,plt_name)
-            
+
             models_time_info.sort_values(by=['models'], inplace=True, ascending=False)
-            
+
             names = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['models'].tolist()
             times = models_time_info[(models_time_info.phases == phase) & (models_time_info.precisions == precision)]['time'].tolist()
-            
+
             name_index = [i for i in range(len(names))]
             plt.figure(figsize=(20, 10), dpi=100)
             plt.barh(name_index,times,color='b',alpha=0.4)
             plt.yticks(name_index, names,fontsize=14)
             for i in range(len(names)):
                 plt.text(times[i],name_index[i]-0.25, times[i] , fontsize=12)
-                        
+
             plt.xlabel('Time(ms)', fontsize=18)
             plt.ylabel('Model', fontsize=16)
-            plt_title = '{} {} models with {} precision'.format(gpu,phase,precision) 
+            plt_title = '{} {} models with {} precision'.format(gpu,phase,precision)
             plt.suptitle(plt_title, fontsize=20)
             plt.savefig(plt_save_path)
 
@@ -249,10 +254,10 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     
     df_envs_models_time = big_data_frame[(big_data_frame.gpus==gpu) & (big_data_frame.phases==phase) & (big_data_frame.precisions==precision)]
     df_envs_models_time = df_envs_models_time.sort_values(['envs','models'])
-    
+
     models = []
     envs = list(set(df_envs_models_time['envs'].tolist()))
-    
+
     envs_time_dict = {}
     for index, rows in df_envs_models_time.iterrows():
         # print(index,rows)
@@ -266,7 +271,7 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     plotdata = pd.DataFrame(envs_time_dict,index = models)
     plotdata = plotdata.sort_index(axis = 1)
     plotdata = plotdata.sort_index(axis = 0)
-    
+
     plotdata.plot(figsize=(30,13),kind="bar",rot=-15,alpha=0.4)
 
     plt.xlabel("Models",fontsize=14)
@@ -281,18 +286,18 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     plt_image_name = '{} {}_models_with_{}_precision_between_{}'.format(gpu,phase,precision,"_".join(sorted(envs)))
     save_path = os.path.join(benchmark_images_save_dir,plt_image_name)
     plt.savefig(save_path)
-    
- 
+
+
 def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,big_data_frame):
     gpu_benchmark_images_save_dir = GPUS_BENCHMARK_IMAGE_SAVE_DIR
     if not os.path.exists(gpu_benchmark_images_save_dir):
         os.makedirs(gpu_benchmark_images_save_dir)
     df_gpus_models_time = big_data_frame[(big_data_frame.envs ==env) & (big_data_frame.phases == phase) & (big_data_frame.precisions == precision)]
     df_gpus_models_time = df_gpus_models_time.sort_values(['gpus','models'])
-    
+
     models = []
     gpus = list(set(df_gpus_models_time['gpus'].tolist()))
-    
+
     gpus_time_dict = {}
     for index, rows in df_gpus_models_time.iterrows():
         if rows.gpus in gpus_time_dict:
@@ -305,7 +310,7 @@ def plot_image_for_compare_model_benchmark_on_multiple_gpus(env,phase,precision,
     plotdata = pd.DataFrame(gpus_time_dict,index = models)
     plotdata = plotdata.sort_index(axis = 1)
     plotdata = plotdata.sort_index(axis = 0)
-  
+
     plotdata.plot(figsize=(30,13),kind="bar",rot=-15,alpha=0.4)
     plt.xlabel("Models",fontsize=14)
     plt.ylabel("Time",fontsize=14)
@@ -327,13 +332,13 @@ def run_models_on_special_gpu():
     nvml.nvmlInit()
     gpu_count = nvml.nvmlDeviceGetCount()
     gpu="".join((device_name.replace(" ","_"), '_' , str(gpu_count), '_gpus'))
-    
+
     experiment(env,gpu)
 
     experiment_result = RESULT_ROOT_DIR
     benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
     benchmark_data_frame_gpu_level = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
-    
+
     save_image_dir = os.path.join(experiment_result,env,gpu,'images')
     if not os.path.exists(save_image_dir):
         os.makedirs(save_image_dir)
@@ -392,7 +397,7 @@ def build_envs_data_frame_benchmark(experiment_result,envs,gpu):
         benchmark_csv_files_dir = os.path.join(experiment_result,env,gpu,'data')
         small_data_frame = build_small_data_frame_for_benchmark(env,gpu,benchmark_csv_files_dir)
         envs_data_frame = pd.concat([envs_data_frame, small_data_frame], axis=0, ignore_index=True)
-    return envs_data_frame    
+    return envs_data_frame
 
 def statistic_benchmark_between_envs():
     envs, gpu  = validate_args_for_statistic_benchmark_between_envs()
