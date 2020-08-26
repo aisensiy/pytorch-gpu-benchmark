@@ -1,0 +1,11 @@
+benchmark start : 2020/08/19 12:56:48
+system_configs
+
+uname_result(system='Linux', node='jupyter--44-45-2d61538cbe-2de1a5-2d11ea-2d8339-2d0255ac100082', release='3.10.0-327.62.59.83.h128.x86_64', version='#1 SMP Mon Jul 9 00:00:00 UTC 2018', machine='x86_64', processor='x86_64')
+gpu_configs
+
+Number of GPUs on current device : 1
+CUDA Version : 10.1
+Cudnn Version : 7603
+Device Name : Tesla P100-PCIE-16GB
+benchmark end : 2020/08/19 13:26:37

@@ -246,9 +246,6 @@ def plot_models_on_same_gpu(models_time_info,gpu,save_image_dir):
             plt.savefig(plt_save_path)
 
 def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,precision,big_data_frame):
-    benchmark_images_save_dir = ENVS_BENCHMARK_IMAGE_SAVE_DIR
-    if not os.path.exists(benchmark_images_save_dir):
-        os.makedirs(benchmark_images_save_dir)
     
     df_envs_models_time = big_data_frame[(big_data_frame.gpus==gpu) & (big_data_frame.phases==phase) & (big_data_frame.precisions==precision)]
     df_envs_models_time = df_envs_models_time.sort_values(['envs','models'])
@@ -276,6 +273,11 @@ def plot_image_with_models_benchmark_on_special_gpu_between_envs(gpu,phase,preci
     plt.ylabel("Time",fontsize=14)
 
     plt.title('{} {} models with {} precision'.format(gpu,phase,precision),fontsize=16)
+    
+    benchmark_images_save_dir = ENVS_BENCHMARK_IMAGE_SAVE_DIR + '/' + '{}_benchmark_bewteen_{}'.format(gpu,"_".join(sorted(envs)))
+    if not os.path.exists(benchmark_images_save_dir):
+        os.makedirs(benchmark_images_save_dir)
+    
     plt_image_name = '{} {}_models_with_{}_precision_between_{}'.format(gpu,phase,precision,"_".join(sorted(envs)))
     save_path = os.path.join(benchmark_images_save_dir,plt_image_name)
     plt.savefig(save_path)
