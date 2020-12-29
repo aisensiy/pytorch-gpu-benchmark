@@ -13,7 +13,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-import pynvml as nvml
+# import pynvml as nvml
 
 
 from torch.utils.data import Dataset, DataLoader
@@ -331,8 +331,9 @@ def run_models_on_special_gpu():
     if len(args.ENVS) != 1:
         raise Exception("env nums must be one, but current nums is : {}".format(len(args.ENVS)),args.ENVS)
     env=args.ENVS[0]
-    nvml.nvmlInit()
-    gpu_count = nvml.nvmlDeviceGetCount()
+    # nvml.nvmlInit()
+    # gpu_count = nvml.nvmlDeviceGetCount()
+    gpu_count = torch.cuda.device_count()
     gpu="".join((device_name.replace(" ","_"), '_' , str(gpu_count), '_gpus'))
 
     experiment(env,gpu)

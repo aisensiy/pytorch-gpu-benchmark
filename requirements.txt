@@ -4,4 +4,4 @@ psutil
 torchvision
 torch>=1.0.0
 matplotlib
-pynvml
+# pynvml
