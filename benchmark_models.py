@@ -45,7 +45,7 @@ parser.add_argument('opertation', type=str, choices=[
                     'run', 'gpu', 'env'], help='run / gpu / env')
 parser.add_argument('--ENVS', '-e', type=str, nargs='+',
                     required=True, default=[], help='Name of enviroment')
-parser.add_argument('--GPU', '-t', type=str, nargs='*',
+parser.add_argument('--GPU', '-g', type=str, nargs='*',
                     required=False, help='Type of gpu')
 parser.add_argument('--WARM_UP', '-w', type=int, default=5,
                     required=False, help="Num of warm up")
@@ -55,7 +55,7 @@ parser.add_argument('--BATCH_SIZE', '-b', type=int, default=12,
                     required=False, help='Num of batch size')
 parser.add_argument('--NUM_CLASSES', '-c', type=int,
                     default=1000, required=False, help='Num of class')
-parser.add_argument('--NUM_GPU', '-g', type=int, default=1,
+parser.add_argument('--NUM_GPU', '-ng', type=int, default=1,
                     required=False, help='Num of gpus')
 
 args = parser.parse_args()
